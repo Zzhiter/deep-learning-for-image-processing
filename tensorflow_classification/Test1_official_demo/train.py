@@ -16,6 +16,7 @@ def main():
     x_test = x_test[..., tf.newaxis]
 
     # create data generator
+    # 载入训练集10000张图片，随机打乱，每个batch为32
     train_ds = tf.data.Dataset.from_tensor_slices(
         (x_train, y_train)).shuffle(10000).batch(32)
     test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(32)
@@ -38,8 +39,8 @@ def main():
 
     # define train function including calculating loss, applying gradient and calculating accuracy
     @tf.function
-    def train_step(images, labels):
-        with tf.GradientTape() as tape:
+    def train_step(images, labels):  #装饰器，转换成tf图结构
+        with tf.GradientTape() as tape:  #用来监控变量的梯度
             predictions = model(images)
             loss = loss_object(labels, predictions)
         gradients = tape.gradient(loss, model.trainable_variables)

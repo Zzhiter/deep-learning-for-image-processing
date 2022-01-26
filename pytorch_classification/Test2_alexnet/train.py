@@ -17,16 +17,18 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using {} device.".format(device))
 
+    # 数据增强
     data_transform = {
-        "train": transforms.Compose([transforms.RandomResizedCrop(224),
-                                     transforms.RandomHorizontalFlip(),
-                                     transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]),
+        "train": transforms.Compose([transforms.RandomResizedCrop(224),  # 随机裁剪至224*224
+                                     transforms.RandomHorizontalFlip(), # 水平方向随机反转
+                                     transforms.ToTensor(), # 转换成tensor
+                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]), # 标准化处理
         "val": transforms.Compose([transforms.Resize((224, 224)),  # cannot 224, must (224, 224)
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])}
 
-    data_root = os.path.abspath(os.path.join(os.getcwd(), "../.."))  # get data root path
+    data_root = os.path.abspath(os.path.join(os.getcwd(), #get current work dir
+                                             "../.."))  # get data root path  返回到上上层目录，然后再去data_set/flower_data
     image_path = os.path.join(data_root, "data_set", "flower_data")  # flower data set path
     assert os.path.exists(image_path), "{} path does not exist.".format(image_path)
     train_dataset = datasets.ImageFolder(root=os.path.join(image_path, "train"),
@@ -35,14 +37,15 @@ def main():
 
     # {'daisy':0, 'dandelion':1, 'roses':2, 'sunflower':3, 'tulips':4}
     flower_list = train_dataset.class_to_idx
-    cla_dict = dict((val, key) for key, val in flower_list.items())
+    cla_dict = dict((val, key) for key, val in flower_list.items())  #把键和值反过来
     # write dict into json file
     json_str = json.dumps(cla_dict, indent=4)
     with open('class_indices.json', 'w') as json_file:
         json_file.write(json_str)
 
     batch_size = 32
-    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
+    # nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
+    nw = 0
     print('Using {} dataloader workers every process'.format(nw))
 
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -83,8 +86,8 @@ def main():
     train_steps = len(train_loader)
     for epoch in range(epochs):
         # train
-        net.train()
-        running_loss = 0.0
+        net.train()  # 因为使用了dropout，所以我们只希望再训练过程中，随机失活一些神经元，但是验证的时候就不需要了，它也会管理batchnormalization
+        running_loss = 0.0  # 统计训练过程中的平均损失
         train_bar = tqdm(train_loader, file=sys.stdout)
         for step, data in enumerate(train_bar):
             images, labels = data
@@ -104,7 +107,7 @@ def main():
         # validate
         net.eval()
         acc = 0.0  # accumulate accurate number / epoch
-        with torch.no_grad():
+        with torch.no_grad():   # 验证过程中不需要梯度
             val_bar = tqdm(validate_loader, file=sys.stdout)
             for val_data in val_bar:
                 val_images, val_labels = val_data

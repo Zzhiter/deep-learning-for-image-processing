@@ -7,6 +7,12 @@ import torchvision.transforms as transforms
 
 
 def main():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    # Assuming that we are on a CUDA machine, this should print a CUDA device:
+
+    print(device)
+
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -21,7 +27,7 @@ def main():
     # 10000张验证图片
     # 第一次使用时要将download设置为True才会自动去下载数据集
     val_set = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                           download=False, transform=transform)
+                                           download=True, transform=transform)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=5000,
                                              shuffle=False, num_workers=0)
     val_data_iter = iter(val_loader)
@@ -30,7 +36,7 @@ def main():
     # classes = ('plane', 'car', 'bird', 'cat',
     #            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    net = LeNet()
+    net = LeNet().to(device)
     loss_function = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001)
 
@@ -40,7 +46,8 @@ def main():
         for step, data in enumerate(train_loader, start=0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
-
+            inputs = inputs.to(device)
+            labels = labels.to(device)
             # zero the parameter gradients
             optimizer.zero_grad()
             # forward + backward + optimize
